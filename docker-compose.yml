@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: echodoc_mssql
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "YourStrong!Passw0rd"
+      ACCEPT_EULA: "Y"
+    volumes:
+      - mssql_data:/var/opt/mssql
+
+  echodoc:
+    build: .
+    container_name: echodoc_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mssql
+    environment:
+      DATABASE_URL: "mssql+pyodbc://sa:YourStrong!Passw0rd@mssql:1433/EchoDocDB?driver=ODBC+Driver+17+for+SQL+Server&Encrypt=yes"
+      AZURE_STORAGE_CONNECTION_STRING: "YourAzureStorageConnectionString"
+      OPENAI_API_KEY: "YourOpenAIKey"
+    volumes:
+      - .:/app
+
+volumes:
+  mssql_data:
+    driver: local
