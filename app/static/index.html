@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EchoDoc</title>
+  <link rel="icon" type="image/x-icon" href="./favicon.ico">
+  <!-- Futuristic fonts from Google -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto&display=swap" rel="stylesheet">
+  <!-- Include marked for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Include Chart.js for evaluation charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* CSS Variables */
+    :root {
+      --bg-color: #0e0e0e;
+      --text-color: #e0e0e0;
+      --accent-color: #00ffff;
+      --accent-hover: #00cccc;
+      --header-bg: #1a1a1a;
+      --card-bg: rgba(20,20,20,0.95);
+      --modal-bg: #151515;
+      --toast-bg: rgba(255, 0, 0, 0.8);
+      --high-score: #00ff00;
+      --low-score: #ff0000;
+    }
+
+    /* Base Reset & Fonts */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #0e0e0e, #1a1a1a);
+      color: var(--text-color);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    /* Utility class */
+    .hidden { display: none; }
+
+    /* Custom scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #222;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent-color);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-hover);
+    }
+    
+    /* Header with Neon Accent */
+    header {
+      background: var(--header-bg);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--accent-color);
+    }
+    header h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2em;
+      color: var(--accent-color);
+      cursor: pointer;
+    }
+    
+    /* Tabs Navigation */
+    .tabs {
+      display: flex;
+      background: #151515;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.3s, color 0.3s;
+      background: #151515;
+      color: var(--text-color);
+      border-right: 1px solid #333;
+    }
+    .tab:last-child { border-right: none; }
+    .tab:hover { background: var(--accent-color); color: #0e0e0e; }
+    .tab.active {
+      background: var(--accent-color);
+      color: #0e0e0e;
+      font-weight: bold;
+    }
+    
+    .container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Toast Notifications */
+    #toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 2000;
+    }
+    .toast {
+      background: var(--toast-bg);
+      color: #fff;
+      padding: 10px 20px;
+      margin-top: 10px;
+      border-radius: 4px;
+      opacity: 0;
+      animation: fadeInOut 5s forwards;
+    }
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(-20px); }
+      10% { opacity: 1; transform: translateY(0); }
+      90% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-20px); }
+    }
+
+    /* Job Cards */
+    .job-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .job-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 20px;
+      width: calc(33.333% - 20px);
+      box-shadow: 0 4px 10px rgba(0,255,255,0.2);
+      border: 1px solid var(--accent-color);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .job-card:hover { 
+      transform: scale(1.02);
+      box-shadow: 0 6px 14px rgba(0,255,255,0.3);
+    }
+    .job-card h3 {
+      font-family: 'Orbitron', sans-serif;
+      margin-bottom: 10px;
+      font-size: 1.4em;
+      color: var(--accent-color);
+    }
+    .job-card p { margin-bottom: 8px; font-size: 0.9em; }
+    .job-actions {
+      margin-top: auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      background: var(--accent-color);
+      color: #0e0e0e;
+      transition: background 0.3s;
+    }
+    .btn:hover { background: var(--accent-hover); }
+    
+    /* Spinner style */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--accent-color);
+      animation: spin 1s ease-in-out infinite;
+      vertical-align: middle;
+      margin-left: 10px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Upload Form */
+    .upload-form {
+      background: #151515;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,255,255,0.2);
+      max-width: 600px;
+      margin: 20px auto;
+      border: 1px solid var(--accent-color);
+    }
+    .upload-form div { margin-bottom: 15px; }
+    .upload-form label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: var(--accent-color);
+    }
+    .upload-form input[type="text"],
+    .upload-form input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #333;
+      border-radius: 4px;
+      background: var(--bg-color);
+      color: var(--text-color);
+    }
+    
+    /* Chat Section Enhancements */
+    #chatTab {
+      padding: 20px;
+      border: 1px solid var(--accent-color);
+      border-radius: 8px;
+      background: #151515;
+      max-width: 800px;
+      margin: 20px auto;
+    }
+    .chat-options {
+      margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.9em;
+      color: var(--accent-color);
+    }
+    .chat-messages {
+      border: 1px solid #333;
+      padding: 15px;
+      height: 450px;
+      overflow-y: auto;
+      background: var(--bg-color);
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    /* Chat bubbles */
+    .chat-messages .message {
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      max-width: 75%;
+      padding: 10px;
+      border-radius: 8px;
+      line-height: 1.4;
+    }
+    .chat-messages .user {
+      font-weight: bold;
+      color: var(--accent-color);
+      margin-bottom: 5px;
+    }
+    .chat-messages .message.bot {
+      align-self: flex-start;
+      background: rgba(0, 255, 255, 0.1);
+    }
+    .chat-messages .message.user {
+      align-self: flex-end;
+      background: rgba(0, 255, 255, 0.2);
+    }
+    /* Chat input container */
+    .chat-input-container {
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-input-container textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #333;
+      border-radius: 4px;
+      background: var(--bg-color);
+      color: var(--text-color);
+      resize: none;
+      min-height: 80px;
+      margin-bottom: 10px;
+    }
+    .chat-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    
+    /* Modal for Logs & Evaluation */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background: rgba(0,0,0,0.8);
+    }
+    .modal-content {
+      background: var(--modal-bg);
+      margin: 5% auto;
+      padding: 20px;
+      width: 90%;
+      max-width: 900px;
+      border-radius: 8px;
+      max-height: 90%;
+      overflow-y: auto;
+      border: 1px solid var(--accent-color);
+      color: var(--text-color);
+    }
+    /* Specific rule for evaluation modal content to use 80% width */
+    #evalModal .modal-content {
+      width: 80%;
+    }
+    .close {
+      float: right;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--accent-color);
+    }
+
+    /* Log Modal Enhancements */
+    #logContent {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .log-card {
+      background: var(--card-bg);
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--accent-color);
+    }
+    .log-card p {
+      margin: 5px 0;
+    }
+    .log-card .timestamp {
+      font-size: 0.8em;
+      color: #aaa;
+    }
+    
+    /* Evaluation Modal Enhancements */
+    .eval-summary {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+    .eval-summary .summary-card {
+      background: var(--card-bg);
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--accent-color);
+      text-align: center;
+      flex: 1;
+      margin: 0 5px;
+    }
+    .eval-summary .summary-card h3 {
+      font-size: 1.2em;
+      margin-bottom: 5px;
+      color: var(--accent-color);
+    }
+    .eval-summary .summary-card p {
+      font-size: 1em;
+      margin: 0;
+    }
+    
+    /* Smaller Chart */
+    #evalChart {
+      margin-bottom: 20px;
+      display: none;
+    }
+    
+    @media (max-width: 768px) {
+      .job-card { width: calc(50% - 20px); }
+    }
+    @media (max-width: 480px) {
+      .job-card { width: 100%; }
+      header { flex-direction: column; align-items: flex-start; }
+      .tab { font-size: 0.9em; padding: 10px 8px; }
+      #chatMessages { height: 300px; }
+      .chat-buttons {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .chat-buttons button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="echodoc-logo">EchoDoc</h1>
+    <!-- Tabs Navigation -->
+    <div class="tabs">
+      <div class="tab active" data-tab="jobsTab">Jobs</div>
+      <div class="tab" data-tab="uploadTab">Upload</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Jobs Tab Content -->
+    <section id="jobsTab" class="tab-content active">
+      <h2>Jobs</h2>
+      <div class="job-cards" id="jobCards">
+        <!-- Job cards will be inserted here -->
+      </div>
+    </section>
+
+    <!-- Upload Tab Content -->
+    <section id="uploadTab" class="tab-content hidden">
+      <h2>Upload Files</h2>
+      <form id="uploadForm" class="upload-form" enctype="multipart/form-data">
+        <div>
+          <label for="jobName">Job Name:</label>
+          <input type="text" id="jobName" name="job_name" required>
+        </div>
+        <div>
+          <label for="files">Select Files:</label>
+          <input type="file" id="files" name="files" multiple required>
+        </div>
+        <button type="submit" id="uploadBtn" class="btn">Upload</button>
+        <span id="uploadSpinner" class="spinner" style="display:none;"></span>
+      </form>
+      <div id="uploadResult" style="margin-top: 15px;"></div>
+    </section>
+
+    <!-- Chat Section (accessible from job card only) -->
+    <section id="chatTab" class="tab-content hidden">
+      <h2>Chat with Model (Job <span id="currentJobId"></span> - <span id="currentJobName"></span>)</h2>
+      <div class="chat-options">
+        <label>
+          <input type="radio" id="ragRadio" name="chatMode" value="rag" checked> RAG
+        </label>
+        <label id="raftContainer">
+          <input type="radio" id="raftRadio" name="chatMode" value="raft"> RAFT
+        </label>
+        <label id="fineTunedContainer">
+          <input type="radio" id="fineTunedRadio" name="chatMode" value="fine_tuned_only"> Fine-Tuned
+        </label>
+      </div>
+      <div id="chatMessages" class="chat-messages">
+        <!-- Chat bubbles will be appended here -->
+      </div>
+      <div class="chat-input-container">
+        <textarea id="chatInput" placeholder="Type your question here"></textarea>
+        <div class="chat-buttons">
+          <button id="sendBtn" class="btn">Send</button>
+          <button id="backBtn" class="btn">Back</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal for Logs -->
+  <div id="logModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="logModalTitle">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="logModalTitle">Job Logs</h2>
+      <div id="logContent">
+        <!-- Log entries will be rendered here as cards -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Evaluation Results -->
+  <div id="evalModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="evalModalTitle">
+    <div class="modal-content">
+      <span class="close evalClose">&times;</span>
+      <h2 id="evalModalTitle">Evaluation Metrics</h2>
+      <div id="evalSpinner" class="spinner" style="display:none;"></div>
+      <!-- Evaluation Summary Section -->
+      <div id="evalSummary" class="eval-summary" style="display:none;"></div>
+      <!-- Chart Canvas (smaller) -->
+      <canvas id="evalChart"></canvas>
+      <!-- Evaluation Table -->
+      <div id="evalResults" style="display:none; max-height:400px; overflow-y:auto;">
+        <table id="evalTable" border="1" style="width:100%; text-align:left; margin-bottom:20px;">
+          <thead>
+            <tr>
+              <th title="The evaluation question">Question</th>
+              <th title="Model Answer">Answer</th>
+              <th title="Relevancy (1-10)">Relevancy</th>
+              <th title="Faithfulness (1-10)">Faithfulness</th>
+              <th title="Completeness (1-10)">Completeness</th>
+              <th title="Clarity (1-10)">Clarity</th>
+              <th title="Correctness (1-10)">Correctness</th>
+              <th title="Oracle Agreement (1-10)">Oracle Agreement</th>
+            </tr>
+          </thead>
+          <tbody id="evalTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <script>
+    const apiBase = "/api"; // Adjust if needed
+
+    // Toast helper function for error messages.
+    function showError(message) {
+      const toastContainer = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.textContent = message;
+      toastContainer.appendChild(toast);
+      // Remove toast after animation completes (5s)
+      setTimeout(() => {
+        toastContainer.removeChild(toast);
+      }, 5000);
+    }
+
+    // Upload form handler with spinner.
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const jobName = document.getElementById("jobName").value.trim();
+      const filesInput = document.getElementById("files");
+      if (!jobName || filesInput.files.length === 0) {
+        showError("Please provide a job name and at least one file.");
+        return;
+      }
+      
+      const uploadBtn = document.getElementById("uploadBtn");
+      const spinner = document.getElementById("uploadSpinner");
+      uploadBtn.disabled = true;
+      uploadBtn.hidden = true;
+      spinner.style.display = "inline-block";
+      
+      const formData = new FormData();
+      formData.append("job_name", jobName);
+      for (const file of filesInput.files) {
+        formData.append("files", file);
+      }
+      try {
+        const response = await fetch(apiBase + "/upload", {
+          method: "POST",
+          body: formData
+        });
+        if (!response.ok) {
+          let errorText = "Upload failed";
+          try {
+            const errorJson = await response.json();
+            if (errorJson.errorMessage) { errorText += ": " + errorJson.errorMessage; }
+          } catch(e) {}
+          throw new Error(errorText);
+        }
+        const resJson = await response.json();
+        if (!resJson.success) throw new Error(resJson.errorMessage || "Upload error");
+        document.getElementById("uploadResult").textContent = "Upload successful! Job ID: " + resJson.data.id;
+      } catch (err) {
+        console.error(err);
+        showError(`Error uploading files. ${err.message || ""}`);
+      } finally {
+        uploadBtn.hidden = false;
+        uploadBtn.disabled = false;
+        spinner.style.display = "none";
+      }
+    });
+
+    // Tab navigation
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        showTab(tab.getAttribute("data-tab"));
+      });
+    });
+
+    function showTab(tabId) {
+      document.querySelectorAll(".tab-content").forEach(content => {
+        content.classList.add("hidden");
+        content.classList.remove("active");
+      });
+      const targetTab = document.getElementById(tabId);
+      targetTab.classList.remove("hidden");
+      targetTab.classList.add("active");
+      if(tabId === "jobsTab") { loadJobs(); }
+    }
+    
+    // When header is clicked, go to the Jobs tab.
+    document.getElementById("echodoc-logo").addEventListener("click", () => {
+      showTab("jobsTab");      
+    });
+
+    // Build job cards.
+    async function loadJobs() {
+      try {
+        const response = await fetch(apiBase + "/jobs");
+        if (!response.ok) throw new Error("Failed to fetch jobs");
+        const resJson = await response.json();
+        if (!resJson.success) throw new Error(resJson.errorMessage || "Failed to load jobs");
+        const jobs = resJson.data;
+        const container = document.getElementById("jobCards");
+        container.innerHTML = "";
+        jobs.forEach(job => {
+          const finetunedDisplay = job.isFinetuned ? "Yes" : "No";
+          const completedDate = job.completed_at ? new Date(job.completed_at).toLocaleString() : "N/A";
+          const documentCount = job.document_count;
+          let ftStatusRow = "";
+          if (!job.isFinetuned) {
+            ftStatusRow = `<p id="ftStatus-${job.id}"><strong>FineTune Status:</strong> Not Run</p>`;
+          }
+          let finetuneAction = "";
+          if (!job.isFinetuned) {
+            finetuneAction = `<button class="btn finetuneBtn" data-jobid="${job.id}">Run Finetune</button>`;
+          }
+          const card = document.createElement("div");
+          card.classList.add("job-card");
+          card.innerHTML = `
+            <h3>${job.job_name}</h3>
+            <p><strong>ID:</strong> ${job.id}</p>
+            <p><strong>Status:</strong> <span id="status-${job.id}">${job.status}</span></p>
+            <p><strong>Completed:</strong> ${completedDate}</p>
+            <p><strong>Finetuned:</strong> ${finetunedDisplay}</p>
+            ${ftStatusRow}
+            <p><strong>Document Count:</strong> ${documentCount}</p>
+            <div class="job-actions">
+              <button class="btn chatBtn" data-jobid="${job.id}" data-jobname="${job.job_name}" data-finetuned="${job.isFinetuned}">Chat</button>
+              ${finetuneAction}
+              <button class="btn evalBtn" data-jobid="${job.id}">Evaluate</button>
+              <button class="btn logBtn" data-jobid="${job.id}">Logs</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+        // Attach event listeners.
+        document.querySelectorAll(".chatBtn").forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            const jobId = e.target.getAttribute("data-jobid");
+            const jobName = e.target.getAttribute("data-jobname");
+            const isFinetuned = e.target.getAttribute("data-finetuned") === "true";
+            openChat({ id: jobId, job_name: jobName, isFinetuned });
+          });
+        });
+        document.querySelectorAll(".finetuneBtn").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            const jobId = e.target.getAttribute("data-jobid");
+            await checkFinetuneStatusAndMaybeRun(jobId);
+          });
+        });
+        document.querySelectorAll(".evalBtn").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            const jobId = e.target.getAttribute("data-jobid");
+            openEvalModal();
+            document.getElementById("evalSpinner").style.display = "inline-block";
+            document.getElementById("evalResults").style.display = "none";
+            document.getElementById("evalSummary").style.display = "none";
+            document.getElementById("evalChart").style.display = "none";
+            try {
+              const response = await fetch(apiBase + `/evaluate/job/${jobId}`, { method: "POST" });
+              if (!response.ok) throw new Error("Evaluation request failed");
+              const resJson = await response.json();
+              if (!resJson.success) throw new Error(resJson.errorMessage || "Evaluation error");
+              const tableBody = document.getElementById("evalTableBody");
+              tableBody.innerHTML = "";
+              let totalMetrics = {
+                relevancy: [],
+                faithfulness: [],
+                completeness: [],
+                clarity: [],
+                correctness: [],
+                oracle_agreement: []
+              };
+              resJson.data.rag_evaluation.per_question.forEach(item => {
+                const avg = item.evaluation.average || {};
+                // Collect scores for chart summary
+                Object.keys(totalMetrics).forEach(metric => {
+                  if(avg[metric] !== undefined){
+                    totalMetrics[metric].push(avg[metric]);
+                  }
+                });
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                  <td>${item.question}</td>
+                  <td>${item.answer || "N/A"}</td>
+                  <td style="color:${avg.relevancy>=7 ? 'var(--high-score)' : 'var(--low-score)'}">${avg.relevancy !== undefined ? avg.relevancy : "N/A"}</td>
+                  <td style="color:${avg.faithfulness>=7 ? 'var(--high-score)' : 'var(--low-score)'}">${avg.faithfulness !== undefined ? avg.faithfulness : "N/A"}</td>
+                  <td style="color:${avg.completeness>=7 ? 'var(--high-score)' : 'var(--low-score)'}">${avg.completeness !== undefined ? avg.completeness : "N/A"}</td>
+                  <td style="color:${avg.clarity>=7 ? 'var(--high-score)' : 'var(--low-score)'}">${avg.clarity !== undefined ? avg.clarity : "N/A"}</td>
+                  <td style="color:${avg.correctness>=7 ? 'var(--high-score)' : 'var(--low-score)'}">${avg.correctness !== undefined ? avg.correctness : "N/A"}</td>
+                  <td style="color:${avg.oracle_agreement>=7 ? 'var(--high-score)' : 'var(--low-score)'}">${avg.oracle_agreement !== undefined ? avg.oracle_agreement : "N/A"}</td>
+                `;
+                tableBody.appendChild(row);
+              });
+              // Calculate overall averages
+              const overallAvg = {};
+              Object.keys(totalMetrics).forEach(metric => {
+                const scores = totalMetrics[metric];
+                overallAvg[metric] = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2) : "N/A";
+              });
+              // Display summary cards
+              const summaryDiv = document.getElementById("evalSummary");
+              summaryDiv.innerHTML = `
+                <div class="summary-card">
+                  <h3>Relevancy</h3>
+                  <p>${overallAvg.relevancy}</p>
+                </div>
+                <div class="summary-card">
+                  <h3>Faithfulness</h3>
+                  <p>${overallAvg.faithfulness}</p>
+                </div>
+                <div class="summary-card">
+                  <h3>Completeness</h3>
+                  <p>${overallAvg.completeness}</p>
+                </div>
+                <div class="summary-card">
+                  <h3>Clarity</h3>
+                  <p>${overallAvg.clarity}</p>
+                </div>
+                <div class="summary-card">
+                  <h3>Correctness</h3>
+                  <p>${overallAvg.correctness}</p>
+                </div>
+                <div class="summary-card">
+                  <h3>Oracle Agree.</h3>
+                  <p>${overallAvg.oracle_agreement}</p>
+                </div>
+              `;
+              summaryDiv.style.display = "flex";
+              
+              // Create radar chart for overall metrics.
+              const ctx = document.getElementById('evalChart').getContext('2d');
+              new Chart(ctx, {
+                type: 'radar',
+                data: {
+                  labels: ['Relevancy', 'Faithfulness', 'Completeness', 'Clarity', 'Correctness', 'Oracle Agreement'],
+                  datasets: [{
+                    label: 'Average Score',
+                    data: [
+                      overallAvg.relevancy,
+                      overallAvg.faithfulness,
+                      overallAvg.completeness,
+                      overallAvg.clarity,
+                      overallAvg.correctness,
+                      overallAvg.oracle_agreement
+                    ],
+                    backgroundColor: 'rgba(0,255,255,0.2)',
+                    borderColor: 'var(--accent-color)',
+                    pointBackgroundColor: 'var(--accent-color)'
+                  }]
+                },
+                options: {
+                  scales: {
+                    r: {
+                      suggestedMin: 0,
+                      suggestedMax: 10
+                    }
+                  }
+                }
+              });
+              document.getElementById("evalChart").style.display = "block";
+              document.getElementById("evalSpinner").style.display = "none";
+              document.getElementById("evalResults").style.display = "block";
+            } catch (err) {
+              console.error(err);
+              showError(`Error during evaluation: ${err.message || ""}`);
+              document.getElementById("evalSpinner").style.display = "none";
+            }
+          });
+        });
+        document.querySelectorAll(".logBtn").forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const jobId = e.target.getAttribute("data-jobid");
+            showLogs(jobId);
+          });
+        });
+      } catch (err) {
+        console.error(err);
+        showError(`Error loading jobs. ${err.message || ""}`);
+      }
+    }
+
+    // Check fine-tune status when Run Finetune is clicked.
+    async function checkFinetuneStatusAndMaybeRun(jobId) {
+      try {
+        const response = await fetch(apiBase + `/finetune/status/${jobId}`);
+        if (!response.ok) {
+          let errorText = "Failed to fetch status";
+          try {
+            const errorJson = await response.json();
+            if (errorJson.detail) { errorText += " - " + errorJson.detail; }
+          } catch(e) {}
+          throw new Error(errorText);
+        }
+        const resJson = await response.json();
+        if (!resJson.success) {
+          let errorText = resJson.errorMessage || "Status error";
+          if (resJson.detail) { errorText += " - " + resJson.detail; }
+          throw new Error(errorText);
+        }
+        const data = resJson.data;
+        if (data.status === "not_run") {
+          await runFinetune(jobId);
+          return;
+        }
+        document.getElementById(`status-${jobId}`).textContent = data.status;
+        const ftStatusEl = document.getElementById(`ftStatus-${jobId}`);
+        if (ftStatusEl) { 
+          ftStatusEl.innerHTML = `<strong>FineTune Status:</strong> ${data.status}`; 
+        }
+        const ftBtn = document.querySelector(`.finetuneBtn[data-jobid="${jobId}"]`);
+        if (ftBtn) { 
+          ftBtn.disabled = true; 
+          ftBtn.textContent = data.status; 
+        }
+        if (data.status === "succeeded") {
+          const jobCard = document.querySelector(`.job-card button.logBtn[data-jobid="${jobId}"]`)?.closest(".job-card");
+          if (jobCard) {
+            const paragraphs = jobCard.querySelectorAll("p");
+            if (paragraphs.length >= 5) {
+              paragraphs[4].innerHTML = `<strong>Finetuned Status:</strong> Succeeded`;
+            }
+            if (ftBtn) { 
+              ftBtn.style.display = "none"; 
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        showError(`Error checking finetune status for Job ${jobId}. ${err.message || ""}`);
+      }
+    }
+
+    // Run the finetune API.
+    async function runFinetune(jobId) {
+      try {
+        const runResponse = await fetch(apiBase + "/finetune/job", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId: parseInt(jobId) })
+        });
+        if (!runResponse.ok) throw new Error("Failed to run finetune");
+        const runJson = await runResponse.json();
+        if (!runJson.success) throw new Error(runJson.errorMessage || "Finetune error");
+        const ftStatusEl = document.getElementById(`ftStatus-${jobId}`);
+        if (ftStatusEl) { ftStatusEl.innerHTML = `<strong>FineTune Status:</strong> Running`; }
+        const ftBtn = document.querySelector(`.finetuneBtn[data-jobid="${jobId}"]`);
+        if (ftBtn) { 
+          ftBtn.disabled = true; 
+          ftBtn.textContent = "Running"; 
+        }
+        // Poll for updated status after 5 seconds.
+        setTimeout(() => {
+          checkFinetuneStatusAndMaybeRun(jobId);
+        }, 5000);
+      } catch (err) {
+        console.error(err);
+        showError(`Error running finetune for Job ${jobId}. ${err.message || ""}`);
+      }
+    }
+
+    async function sendMessage() {
+      const jobId = document.getElementById("currentJobId").textContent;
+      const input = document.getElementById("chatInput");
+      const message = input.value.trim();
+      if (!message) return;
+      input.value = "";
+      const chatDiv = document.getElementById("chatMessages");
+      const userMsg = document.createElement("div");
+      userMsg.className = "message user";
+      userMsg.innerHTML = `<span class="user">You:</span> ${message}`;
+      chatDiv.appendChild(userMsg);
+      const mode = document.querySelector("input[name='chatMode']:checked").value;
+      try {
+        const url = apiBase + `/chat/job/${jobId}?mode=${mode}&message=${encodeURIComponent(message)}`;
+        const response = await fetch(url, { method: "POST" });
+        if (!response.ok) throw new Error("Chat request failed");
+        const resJson = await response.json();
+        if (!resJson.success) throw new Error(resJson.errorMessage || "Chat error");
+        const botResponse = resJson.data;
+        const botMsg = document.createElement("div");
+        botMsg.className = "message bot";
+        const renderedResponse = (typeof marked === "function") ? marked(botResponse) : botResponse;
+        botMsg.innerHTML = `<span class="user">Bot:</span> ${renderedResponse}`;
+        chatDiv.appendChild(botMsg);
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+      } catch (err) {
+        console.error(err);
+        showError(`Error sending message for Job ${jobId}. ${err.message || ""}`);
+      }
+    }
+
+    // Function to fetch and display logs in the modal as log cards.
+    async function showLogs(jobId) {
+      try {
+        const response = await fetch(apiBase + `/logs/${jobId}`);
+        if (!response.ok) throw new Error("Failed to fetch logs");
+        const resJson = await response.json();
+        if (!resJson.success) throw new Error(resJson.errorMessage || "Failed to load logs");
+        const logs = resJson.data.logs || resJson.data;
+        const logContent = document.getElementById("logContent");
+        logContent.innerHTML = "";
+        logs.forEach(log => {
+          const card = document.createElement("div");
+          card.className = "log-card";
+          card.innerHTML = `
+            <p><strong>Event:</strong> ${log.event_type}</p>
+            <p><strong>Message:</strong> ${log.message}</p>
+            <p class="timestamp"><strong>Timestamp:</strong> ${new Date(log.timestamp).toLocaleString()}</p>
+          `;
+          logContent.appendChild(card);
+        });
+        document.getElementById("logModal").style.display = "block";
+      } catch (err) {
+        console.error(err);
+        showError(`Error fetching logs: ${err.message || ""}`);
+      }
+    }
+
+    document.getElementById("sendBtn").addEventListener("click", sendMessage);
+    document.getElementById("backBtn").addEventListener("click", () => {
+      showTab("jobsTab");      
+    });
+
+    function openModal() { document.getElementById("logModal").style.display = "block"; }
+    function closeModal() { document.getElementById("logModal").style.display = "none"; }
+    document.querySelector(".close").addEventListener("click", closeModal);
+    window.addEventListener("click", (event) => {
+      if (event.target == document.getElementById("logModal")) { closeModal(); }
+    });
+
+    // Chat functions.
+    function openChat(job) {
+      showTab("chatTab");
+      document.getElementById("currentJobId").textContent = job.id;
+      document.getElementById("currentJobName").textContent = job.job_name;
+      document.getElementById("chatMessages").innerHTML = "";
+      const raftContainer = document.getElementById("raftContainer");
+      const fineTunedContainer = document.getElementById("fineTunedContainer");
+      if (job.isFinetuned) {
+        raftContainer.style.display = "inline-block";
+        fineTunedContainer.style.display = "inline-block";
+      } else {
+        raftContainer.style.display = "none";
+        fineTunedContainer.style.display = "none";
+        document.getElementById("ragRadio").checked = true;
+      }
+    }
+
+    // Evaluation modal functions.
+    function openEvalModal() { document.getElementById("evalModal").style.display = "block"; }
+    function closeEvalModal() { document.getElementById("evalModal").style.display = "none"; }
+    document.querySelector(".evalClose").addEventListener("click", closeEvalModal);
+    window.addEventListener("click", (event) => {
+      if (event.target == document.getElementById("evalModal")) { closeEvalModal(); }
+    });
+
+    // Initialize with Jobs tab.
+    showTab("jobsTab");    
+  </script>
+</body>
+</html>
